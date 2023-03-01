@@ -1,16 +1,15 @@
 import getopt
 import json
-import os
-from os import walk, rename, path
 import re
 import sys
+from os import walk, rename, path
 from pathlib import Path
-from typing import Callable, Tuple
+from typing import Callable
 
 from test_dummy_renamer import DummyRenamer
 
 _USELESS_INFOS_REGEX = re.compile(
-    r"(\[.*\])|([0-9]{4}).*|([0-9]{3,4}p.*)|(x[0-9]{3}.*)|(bdrip).*|(brrip).*|(hdrip).*",
+    r"(\[.*])|([0-9]{4}).*|([0-9]{3,4}p.*)|(x[0-9]{3}.*)|(bdrip).*|(brrip).*|(hdrip).*",
     re.IGNORECASE,
 )
 _LANGUAGES = {
@@ -27,7 +26,7 @@ _LANGUAGES = {
 }
 
 
-def _rename(file_name: str, ext: str = None) -> str:
+def _forge_new_name(file_name: str, ext: str = None) -> str:
     languages = _extract_languages_from_name(file_name)
     new_name = _USELESS_INFOS_REGEX.sub("", file_name)
     replacement = (
@@ -50,12 +49,11 @@ def _extract_languages_from_name(file_name):
     flatten_file_name = flat_map(
         lambda x: x, [el.split(" ") for el in file_name.split(".")]
     )
-    languages = [
+    return [
         language
         for key, language in _LANGUAGES.items()
         if key in flatten_file_name or key.casefold() in flatten_file_name
     ]
-    return languages
 
 
 def rename_files_and_directories(
@@ -64,29 +62,47 @@ def rename_files_and_directories(
     renamed_files_and_dirs = {"files": [], "dirs": []}
     for root, _, files in walk(root_path):
         for name in files:
-            new_file_name = _rename(*(path.splitext(Path(name))))
+            new_file_name = _forge_new_name(*(path.splitext(Path(name))))
             if new_file_name != name:
-                file_to_rename = path.join(root, name)
-                new_file_name_dest = path.join(root, new_file_name)
-                renamed_files_and_dirs["files"].append(
-                    {"from": file_to_rename, "to": new_file_name_dest}
+                to_rename, new_name = _rename(
+                    root,
+                    name,
+                    new_file_name,
+                    file_renamer,
                 )
-                file_renamer(
-                    file_to_rename,
-                    new_file_name_dest,
+                renamed_files_and_dirs["files"].append(
+                    {"from": to_rename, "to": new_name}
                 )
 
     for root, dirs, _ in walk(root_path):
         for dir in dirs:
-            new_dir_name = _rename(dir)
+            new_dir_name = _forge_new_name(dir)
             if new_dir_name != dir:
-                dir_to_rename = path.join(root, dir)
-                new_dir_name_dest = path.join(root, new_dir_name)
-                renamed_files_and_dirs["dirs"].append(
-                    {"from": dir_to_rename, "to": new_dir_name_dest}
+                to_rename, new_name = _rename(
+                    root,
+                    dir,
+                    new_dir_name,
+                    file_renamer,
                 )
-                file_renamer(dir_to_rename, new_dir_name_dest)
+                renamed_files_and_dirs["dirs"].append(
+                    {"from": to_rename, "to": new_name}
+                )
     return renamed_files_and_dirs
+
+
+def _rename(
+    root: str,
+    to_rename: str,
+    new_name: str,
+    renamer: Callable[[str, str], None],
+):
+    file_to_rename = path.join(root, to_rename)
+    new_file_name_dest = path.join(root, new_name)
+    renamer(
+        file_to_rename,
+        new_file_name_dest,
+    )
+    return file_to_rename, new_file_name_dest
 
 
 if __name__ == "__main__":
