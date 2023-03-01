@@ -1,30 +1,18 @@
 import argparse
-import getopt
 import json
 import re
-import sys
 from os import walk, rename, path
 from pathlib import Path
 from typing import Callable, List
 
+from languages import extract_languages_from_name
+from search_engine import SearchEngine, SearchResult
 from test_dummy_renamer import DummyRenamer
 
 _USELESS_INFOS_REGEX = re.compile(
     r"(\[.*])|([0-9]{4}).*|([0-9]{3,4}p.*)|(x[0-9]{3}.*)|(bdrip).*|(brrip).*|(hdrip).*",
     re.IGNORECASE,
 )
-_LANGUAGES = {
-    "PORTUGUESE": "PORTUGUESE",
-    "PT": "PORTUGUESE",
-    "BR": "PORTUGUESE",
-    "FRENCH": "FRENCH",
-    "FR": "FRENCH",
-    "FRE": "FRENCH",
-    "ENG": "ENGLISH",
-    "EN": "ENGLISH",
-    "US": "ENGLISH",
-    "VOSTFR": "VOSTFR",
-}
 
 
 def rename_files_and_directories(
@@ -61,13 +49,13 @@ def rename_files_and_directories(
     return renamed_files_and_dirs
 
 
-def search(root_path: Path, keywords: List[str]):
-    pass
+def search(root_path: Path, keywords: List[str]) -> SearchResult:
+    return SearchEngine(root_path, keywords).run()
 
 
 def _forge_new_name(file_name: str, ext: str = None) -> str:
     if not file_name.startswith("."):
-        languages = _extract_languages_from_name(file_name)
+        languages = extract_languages_from_name(file_name)
         new_name = _USELESS_INFOS_REGEX.sub("", file_name)
         replacement = (
             new_name.replace(".", "_")
@@ -83,18 +71,6 @@ def _forge_new_name(file_name: str, ext: str = None) -> str:
         replacement += f"_{'_'.join(languages)}" if languages else ""
         return f"{replacement}{ext}" if ext is not None else f"{replacement}"
     return file_name
-
-
-def _extract_languages_from_name(file_name):
-    flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
-    flatten_file_name = flat_map(
-        lambda x: x, [el.split(" ") for el in file_name.split(".")]
-    )
-    return [
-        language
-        for key, language in _LANGUAGES.items()
-        if key in flatten_file_name or key.casefold() in flatten_file_name
-    ]
 
 
 def _rename(
@@ -121,10 +97,12 @@ if __name__ == "__main__":
         type=str,
     )
     parser.add_argument(
-        "-k", "--keyword", help="the search keyword argument (separated with commas)"
+        "-k",
+        "--keyword",
+        help="the search keyword argument (separated with commas)",
+        default="",
     )
     args = parser.parse_args()
-    print(args.path)
     if args.command == "rename":
         print(
             json.dumps(
@@ -132,4 +110,4 @@ if __name__ == "__main__":
             )
         )
     else:
-        search(Path(args.path), args.keyword.split(","))
+        search(Path(args.path), args.keyword.split(",")).print()

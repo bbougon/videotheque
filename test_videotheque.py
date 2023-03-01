@@ -1,7 +1,10 @@
 from pathlib import Path
+from subprocess import CompletedProcess
+from unittest.mock import call, ANY
 
+from search_engine import Movie
 from test_dummy_renamer import DummyRenamer
-from videotheque import rename_files_and_directories
+from videotheque import rename_files_and_directories, search
 
 
 def test_should_rename_one_file_according_to_their_original_names(mocker):
@@ -122,7 +125,7 @@ def test_should_rename_files_containing_year_in_parentheses(mocker):
 
 
 def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
-    walk = mocker.patch(
+    mocker.patch(
         "videotheque.walk",
         return_value=[
             (
@@ -140,7 +143,7 @@ def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
 
 
 def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
-    walk = mocker.patch(
+    mocker.patch(
         "videotheque.walk",
         return_value=[
             (
@@ -155,3 +158,72 @@ def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
     rename_files_and_directories(Path("/Videos"), renamer.rename)
 
     assert renamer.moves == []
+
+
+def test_should_search(mocker):
+    # -show_entries format=duration -v quiet -of csv="p=0" -sexagesimal
+    subprocess_run = mocker.patch(
+        "search_engine.subprocess.run",
+        return_value=CompletedProcess(args=[], returncode=0, stdout=b"01:30:09.36"),
+    )
+    mocker.patch(
+        "search_engine.walk",
+        return_value=[
+            (
+                "/Videos",
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME"],
+                ["Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4"],
+            ),
+            (
+                "/Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+                [],
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi"],
+            ),
+        ],
+    )
+
+    result = search(Path("/Videos"), [])
+
+    assert result.movies == [
+        Movie(
+            "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD",
+            "01:30:09.36",
+            ["Portuguese"],
+        ),
+        Movie(
+            "[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+            "01:30:09.36",
+            ["French"],
+        ),
+    ]
+    first_call = call(
+        [
+            "ffprobe",
+            "-i",
+            "/Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi",
+            "-show_entries",
+            "format=duration",
+            "-v",
+            "quiet",
+            "-of",
+            'csv="p=0"',
+            "-sexagesimal",
+        ],
+        capture_output=True,
+    )
+    second_call = call(
+        [
+            "ffprobe",
+            "-i",
+            "/Videos/Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
+            "-show_entries",
+            "format=duration",
+            "-v",
+            "quiet",
+            "-of",
+            'csv="p=0"',
+            "-sexagesimal",
+        ],
+        capture_output=True,
+    )
+    subprocess_run.assert_has_calls([first_call, second_call])
