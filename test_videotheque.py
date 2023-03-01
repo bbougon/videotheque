@@ -119,3 +119,21 @@ def test_should_rename_files_containing_year_in_parentheses(mocker):
             "/Videos/Overlord.avi",
         ),
     ]
+
+
+def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
+    walk = mocker.patch(
+        "videotheque.walk",
+        return_value=[
+            (
+                "/Videos",
+                ["Asterix_E_Il_Regno_Degli_Dei_FRENCH_ENGLISH"],
+                ["Asterix_E_Il_Regno_Degli_Dei_FRENCH_ENGLISH.mkv"],
+            ),
+        ],
+    )
+    renamer = DummyRenamer()
+
+    rename_files_and_directories(Path("/Videos"), renamer.rename)
+
+    assert renamer.moves == []

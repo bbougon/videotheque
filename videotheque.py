@@ -64,24 +64,28 @@ def rename_files_and_directories(
     renamed_files_and_dirs = {"files": [], "dirs": []}
     for root, _, files in walk(root_path):
         for name in files:
-            file_to_rename = path.join(root, name)
-            new_file_name = path.join(root, _rename(*(path.splitext(Path(name)))))
-            renamed_files_and_dirs["files"].append(
-                {"from": file_to_rename, "to": new_file_name}
-            )
-            file_renamer(
-                file_to_rename,
-                new_file_name,
-            )
+            new_file_name = _rename(*(path.splitext(Path(name))))
+            if new_file_name != name:
+                file_to_rename = path.join(root, name)
+                new_file_name_dest = path.join(root, new_file_name)
+                renamed_files_and_dirs["files"].append(
+                    {"from": file_to_rename, "to": new_file_name_dest}
+                )
+                file_renamer(
+                    file_to_rename,
+                    new_file_name_dest,
+                )
 
     for root, dirs, _ in walk(root_path):
         for dir in dirs:
-            dir_to_rename = path.join(root, dir)
-            new_dir_name = path.join(root, _rename(dir))
-            renamed_files_and_dirs["dirs"].append(
-                {"from": dir_to_rename, "to": new_dir_name}
-            )
-            file_renamer(dir_to_rename, new_dir_name)
+            new_dir_name = _rename(dir)
+            if new_dir_name != dir:
+                dir_to_rename = path.join(root, dir)
+                new_dir_name_dest = path.join(root, new_dir_name)
+                renamed_files_and_dirs["dirs"].append(
+                    {"from": dir_to_rename, "to": new_dir_name_dest}
+                )
+                file_renamer(dir_to_rename, new_dir_name_dest)
     return renamed_files_and_dirs
 
 
