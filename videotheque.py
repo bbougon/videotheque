@@ -27,7 +27,9 @@ def _rename(file_name: str, ext: str = None) -> str:
     return f"{replacement}{ext}" if ext is not None else f"{replacement}"
 
 
-def rename_files_and_directories(root_path: Path, file_renamer: Callable = rename):
+def rename_files_and_directories(
+    root_path: Path, file_renamer: Callable[[str, str], None] = rename
+):
     renamed_files_and_dirs = {"files": [], "dirs": []}
     for root, _, files in walk(root_path):
         for name in files:
