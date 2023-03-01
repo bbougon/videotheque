@@ -27,21 +27,23 @@ _LANGUAGES = {
 
 
 def _forge_new_name(file_name: str, ext: str = None) -> str:
-    languages = _extract_languages_from_name(file_name)
-    new_name = _USELESS_INFOS_REGEX.sub("", file_name)
-    replacement = (
-        new_name.replace(".", "_")
-        .strip()
-        .replace(" ", "_")
-        .replace("__", "_")
-        .replace("___", "_")
-        .replace("(", "")
-        .replace(")", "")
-        .replace("-", "")
-        .removesuffix("_")
-    )
-    replacement += f"_{'_'.join(languages)}" if languages else ""
-    return f"{replacement}{ext}" if ext is not None else f"{replacement}"
+    if not file_name.startswith("."):
+        languages = _extract_languages_from_name(file_name)
+        new_name = _USELESS_INFOS_REGEX.sub("", file_name)
+        replacement = (
+            new_name.replace(".", "_")
+            .strip()
+            .replace(" ", "_")
+            .replace("__", "_")
+            .replace("___", "_")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("-", "")
+            .removesuffix("_")
+        )
+        replacement += f"_{'_'.join(languages)}" if languages else ""
+        return f"{replacement}{ext}" if ext is not None else f"{replacement}"
+    return file_name
 
 
 def _extract_languages_from_name(file_name):

@@ -137,3 +137,21 @@ def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
     rename_files_and_directories(Path("/Videos"), renamer.rename)
 
     assert renamer.moves == []
+
+
+def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
+    walk = mocker.patch(
+        "videotheque.walk",
+        return_value=[
+            (
+                "/Videos",
+                [".hidden_dir"],
+                [".hidden_file"],
+            ),
+        ],
+    )
+    renamer = DummyRenamer()
+
+    rename_files_and_directories(Path("/Videos"), renamer.rename)
+
+    assert renamer.moves == []
