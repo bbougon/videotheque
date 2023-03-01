@@ -1,10 +1,11 @@
+import argparse
 import getopt
 import json
 import re
 import sys
 from os import walk, rename, path
 from pathlib import Path
-from typing import Callable
+from typing import Callable, List
 
 from test_dummy_renamer import DummyRenamer
 
@@ -24,38 +25,6 @@ _LANGUAGES = {
     "US": "ENGLISH",
     "VOSTFR": "VOSTFR",
 }
-
-
-def _forge_new_name(file_name: str, ext: str = None) -> str:
-    if not file_name.startswith("."):
-        languages = _extract_languages_from_name(file_name)
-        new_name = _USELESS_INFOS_REGEX.sub("", file_name)
-        replacement = (
-            new_name.replace(".", "_")
-            .strip()
-            .replace(" ", "_")
-            .replace("__", "_")
-            .replace("___", "_")
-            .replace("(", "")
-            .replace(")", "")
-            .replace("-", "")
-            .removesuffix("_")
-        )
-        replacement += f"_{'_'.join(languages)}" if languages else ""
-        return f"{replacement}{ext}" if ext is not None else f"{replacement}"
-    return file_name
-
-
-def _extract_languages_from_name(file_name):
-    flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
-    flatten_file_name = flat_map(
-        lambda x: x, [el.split(" ") for el in file_name.split(".")]
-    )
-    return [
-        language
-        for key, language in _LANGUAGES.items()
-        if key in flatten_file_name or key.casefold() in flatten_file_name
-    ]
 
 
 def rename_files_and_directories(
@@ -92,6 +61,42 @@ def rename_files_and_directories(
     return renamed_files_and_dirs
 
 
+def search(root_path: Path, keywords: List[str]):
+    pass
+
+
+def _forge_new_name(file_name: str, ext: str = None) -> str:
+    if not file_name.startswith("."):
+        languages = _extract_languages_from_name(file_name)
+        new_name = _USELESS_INFOS_REGEX.sub("", file_name)
+        replacement = (
+            new_name.replace(".", "_")
+            .strip()
+            .replace(" ", "_")
+            .replace("__", "_")
+            .replace("___", "_")
+            .replace("(", "")
+            .replace(")", "")
+            .replace("-", "")
+            .removesuffix("_")
+        )
+        replacement += f"_{'_'.join(languages)}" if languages else ""
+        return f"{replacement}{ext}" if ext is not None else f"{replacement}"
+    return file_name
+
+
+def _extract_languages_from_name(file_name):
+    flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
+    flatten_file_name = flat_map(
+        lambda x: x, [el.split(" ") for el in file_name.split(".")]
+    )
+    return [
+        language
+        for key, language in _LANGUAGES.items()
+        if key in flatten_file_name or key.casefold() in flatten_file_name
+    ]
+
+
 def _rename(
     root: str,
     to_rename: str,
@@ -108,14 +113,23 @@ def _rename(
 
 
 if __name__ == "__main__":
-    file_path = ""
-    opts, args = getopt.getopt(sys.argv[1:], "hf:", ["file-path="])
-    for opt, arg in opts:
-        if opt == "-h":
-            print("videotheque.py -f <file_path>")
-            sys.exit()
-        elif opt in ("-f", "--file-path"):
-            file_path = arg
-    print(
-        json.dumps(rename_files_and_directories(Path(file_path), DummyRenamer().rename))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("path", help="the path where to find your videos", type=Path)
+    parser.add_argument(
+        "command",
+        help="the name of the command to execute (<rename> | <search>)",
+        type=str,
     )
+    parser.add_argument(
+        "-k", "--keyword", help="the search keyword argument (separated with commas)"
+    )
+    args = parser.parse_args()
+    print(args.path)
+    if args.command == "rename":
+        print(
+            json.dumps(
+                rename_files_and_directories(args.path, DummyRenamer().rename), indent=2
+            )
+        )
+    else:
+        search(Path(args.path), args.keyword.split(","))
