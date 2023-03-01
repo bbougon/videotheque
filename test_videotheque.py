@@ -1,15 +1,7 @@
 from pathlib import Path
-from typing import List, Tuple
 
+from test_dummy_renamer import DummyRenamer
 from videotheque import rename_files_and_directories
-
-
-class DummyRenamer:
-    def __init__(self) -> None:
-        self.moves: List[Tuple[str, str]] = []
-
-    def rename(self, src: str, dest: str):
-        self.moves.append((src, dest))
 
 
 def test_should_rename_one_file_according_to_their_original_names(mocker):
@@ -96,3 +88,34 @@ def test_should_rename_files_and_directories_according_to_their_original_names(m
             },
         ],
     }
+
+
+def test_should_rename_files_containing_year_in_parentheses(mocker):
+    walk = mocker.patch(
+        "videotheque.walk",
+        return_value=[
+            (
+                "/Videos",
+                [],
+                [
+                    "Asterix E Il Regno Degli Dei (2014).ita.fre.sub.ita.eng.MIRCrew.mkv",
+                    "Overlord (2018) [WEBRip] [720p] [YTS.AM].avi",
+                ],
+            ),
+        ],
+    )
+    renamer = DummyRenamer()
+
+    rename_files_and_directories(Path("/Videos"), renamer.rename)
+
+    walk.assert_called()
+    assert renamer.moves == [
+        (
+            "/Videos/Asterix E Il Regno Degli Dei (2014).ita.fre.sub.ita.eng.MIRCrew.mkv",
+            "/Videos/Asterix_E_Il_Regno_Degli_Dei_FRENCH_ENGLISH.mkv",
+        ),
+        (
+            "/Videos/Overlord (2018) [WEBRip] [720p] [YTS.AM].avi",
+            "/Videos/Overlord.avi",
+        ),
+    ]

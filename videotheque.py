@@ -5,16 +5,30 @@ from os import walk, rename, path
 import re
 import sys
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Tuple
+
+from test_dummy_renamer import DummyRenamer
 
 _USELESS_INFOS_REGEX = re.compile(
-    r"(\[.*\])|([0-9]{4})|(\(.*\))|([0-9]{3,4}p.*)|(x[0-9]{3}.*)|(bdrip).*|(brrip).*|(hdrip).*",
+    r"(\[.*\])|([0-9]{4}).*|([0-9]{3,4}p.*)|(x[0-9]{3}.*)|(bdrip).*|(brrip).*|(hdrip).*",
     re.IGNORECASE,
 )
-_LANGUAGES = ["PORTUGUESE", "FRENCH", "FR", "ENG", "VOSTFR"]
+_LANGUAGES = {
+    "PORTUGUESE": "PORTUGUESE",
+    "PT": "PORTUGUESE",
+    "BR": "PORTUGUESE",
+    "FRENCH": "FRENCH",
+    "FR": "FRENCH",
+    "FRE": "FRENCH",
+    "ENG": "ENGLISH",
+    "EN": "ENGLISH",
+    "US": "ENGLISH",
+    "VOSTFR": "VOSTFR",
+}
 
 
 def _rename(file_name: str, ext: str = None) -> str:
+    languages = _extract_languages_from_name(file_name)
     new_name = _USELESS_INFOS_REGEX.sub("", file_name)
     replacement = (
         new_name.replace(".", "_")
@@ -22,9 +36,26 @@ def _rename(file_name: str, ext: str = None) -> str:
         .replace(" ", "_")
         .replace("__", "_")
         .replace("___", "_")
+        .replace("(", "")
+        .replace(")", "")
+        .replace("-", "")
         .removesuffix("_")
     )
+    replacement += f"_{'_'.join(languages)}" if languages else ""
     return f"{replacement}{ext}" if ext is not None else f"{replacement}"
+
+
+def _extract_languages_from_name(file_name):
+    flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
+    flatten_file_name = flat_map(
+        lambda x: x, [el.split(" ") for el in file_name.split(".")]
+    )
+    languages = [
+        language
+        for key, language in _LANGUAGES.items()
+        if key in flatten_file_name or key.casefold() in flatten_file_name
+    ]
+    return languages
 
 
 def rename_files_and_directories(
@@ -63,4 +94,6 @@ if __name__ == "__main__":
             sys.exit()
         elif opt in ("-f", "--file-path"):
             file_path = arg
-    print(json.dumps(rename_files_and_directories(Path(file_path))))
+    print(
+        json.dumps(rename_files_and_directories(Path(file_path), DummyRenamer().rename))
+    )
