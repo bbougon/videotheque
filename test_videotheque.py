@@ -1,8 +1,7 @@
 from pathlib import Path
-from subprocess import CompletedProcess
-from unittest.mock import call, ANY
+from typing import List
 
-from search_engine import Movie
+from search_engine import Movie, SearchEngine, VideoInformationRunner
 from test_dummy_renamer import DummyRenamer
 from videotheque import rename_files_and_directories, search
 
@@ -161,11 +160,6 @@ def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
 
 
 def test_should_search(mocker):
-    # -show_entries format=duration -v quiet -of csv="p=0" -sexagesimal
-    subprocess_run = mocker.patch(
-        "search_engine.subprocess.run",
-        return_value=CompletedProcess(args=[], returncode=0, stdout=b"01:30:09.36"),
-    )
     mocker.patch(
         "search_engine.walk",
         return_value=[
@@ -181,8 +175,9 @@ def test_should_search(mocker):
             ),
         ],
     )
+    runner = DummyRunner()
 
-    result = search(Path("/Videos"), [])
+    result = search(Path("/Videos"), [], SearchEngine(runner))
 
     assert result.movies == [
         Movie(
@@ -196,34 +191,44 @@ def test_should_search(mocker):
             ["French"],
         ),
     ]
-    first_call = call(
-        [
-            "ffprobe",
-            "-i",
-            "/Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi",
-            "-show_entries",
-            "format=duration",
-            "-v",
-            "quiet",
-            "-of",
-            'csv="p=0"',
-            "-sexagesimal",
+    assert runner.arguments == [
+        "ffprobe -i /Videos/Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4 -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+        "ffprobe -i /Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+    ]
+
+
+def test_should_search_avoiding_hidden_files(mocker):
+    mocker.patch(
+        "search_engine.walk",
+        return_value=[
+            (
+                "/Videos",
+                [],
+                [
+                    "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
+                    ".hidden_file",
+                ],
+            ),
         ],
-        capture_output=True,
     )
-    second_call = call(
-        [
-            "ffprobe",
-            "-i",
-            "/Videos/Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
-            "-show_entries",
-            "format=duration",
-            "-v",
-            "quiet",
-            "-of",
-            'csv="p=0"',
-            "-sexagesimal",
-        ],
-        capture_output=True,
-    )
-    subprocess_run.assert_has_calls([first_call, second_call])
+    result = search(Path("/Videos"), [], SearchEngine(DummyRunner()))
+
+    assert result.movies == [
+        Movie(
+            "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD",
+            "01:30:09.36",
+            ["Portuguese"],
+        ),
+    ]
+
+
+class DummyRunner(VideoInformationRunner):
+    arguments: List[str]
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.arguments = []
+
+    def run(self, *args):
+        self.arguments.append(*args)
+        return "01:30:09.36"

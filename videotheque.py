@@ -49,8 +49,10 @@ def rename_files_and_directories(
     return renamed_files_and_dirs
 
 
-def search(root_path: Path, keywords: List[str]) -> SearchResult:
-    return SearchEngine(root_path, keywords).run()
+def search(
+    root_path: Path, keywords: List[str], search_engine: SearchEngine = SearchEngine()
+) -> SearchResult:
+    return search_engine.run(root_path, keywords)
 
 
 def _forge_new_name(file_name: str, ext: str = None) -> str:

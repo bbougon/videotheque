@@ -1,4 +1,6 @@
+import shlex
 import subprocess
+from abc import abstractmethod
 from dataclasses import dataclass
 from os import walk, path
 from pathlib import Path
@@ -33,43 +35,48 @@ class SearchResult:
         self.movies.append(movie)
 
 
-class SearchEngine:
-    def __init__(self, root_path: Path, keywords: List[str]) -> None:
-        super().__init__()
-        self.root_path = root_path
-        self.keywords = keywords
+class VideoInformationRunner:
+    @abstractmethod
+    def run(self, *args):
+        pass
 
-    def run(self) -> SearchResult:
+
+class FFProbeRunner(VideoInformationRunner):
+    def run(self, *args):
+        completed_process: CompletedProcess = subprocess.run(
+            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
+        return completed_process.stdout.decode("utf-8")
+
+
+class SearchEngine:
+    def __init__(self, runner: VideoInformationRunner = FFProbeRunner()) -> None:
+        super().__init__()
+        self.runner = runner
+
+    def run(
+        self,
+        root_path: Path,
+        keywords: List[str],
+    ) -> SearchResult:
         result = SearchResult()
-        for root, _, files in walk(self.root_path):
+        for root, _, files in walk(root_path):
             for name in files:
-                movie_name, _ = path.splitext(Path(name))
-                result.add(
-                    Movie(
-                        movie_name,
-                        self.search_for_duration(path.join(root, name)),
-                        [
-                            name.capitalize()
-                            for name in extract_languages_from_name(name)
-                        ],
+                if not name.startswith("."):
+                    movie_name, _ = path.splitext(Path(name))
+                    result.add(
+                        Movie(
+                            movie_name,
+                            self.search_for_duration(path.join(root, name)),
+                            [
+                                name.capitalize()
+                                for name in extract_languages_from_name(name)
+                            ],
+                        )
                     )
-                )
         return result
 
     def search_for_duration(self, path: str) -> str:
-        completed_process: CompletedProcess = subprocess.run(
-            [
-                "ffprobe",
-                "-i",
-                path,
-                "-show_entries",
-                "format=duration",
-                "-v",
-                "quiet",
-                "-of",
-                'csv="p=0"',
-                "-sexagesimal",
-            ],
-            capture_output=True,
+        return self.runner.run(
+            f"ffprobe -i {path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
         )
-        return completed_process.stdout.decode("utf-8")
