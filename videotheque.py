@@ -3,7 +3,7 @@ import json
 import re
 from os import walk, rename, path
 from pathlib import Path
-from typing import Callable, List
+from typing import Callable, List, Dict, Optional, Tuple
 
 from languages import extract_languages_from_name
 from search_engine import SearchEngine, SearchResult
@@ -18,7 +18,7 @@ _USELESS_INFOS_REGEX = re.compile(
 def rename_files_and_directories(
     root_path: Path, file_renamer: Callable[[str, str], None] = rename
 ):
-    renamed_files_and_dirs = {"files": [], "dirs": []}
+    renamed_files_and_dirs: Dict[str, List[Dict[str, str]]] = {"files": [], "dirs": []}
     for root, _, files in walk(root_path):
         for name in files:
             new_file_name = _forge_new_name(*(path.splitext(Path(name))))
@@ -55,7 +55,7 @@ def search(
     return search_engine.run(root_path, keywords)
 
 
-def _forge_new_name(file_name: str, ext: str = None) -> str:
+def _forge_new_name(file_name: str, ext: Optional[str] = None) -> str:
     if not file_name.startswith("."):
         languages = extract_languages_from_name(file_name)
         new_name = _USELESS_INFOS_REGEX.sub("", file_name)
@@ -80,7 +80,7 @@ def _rename(
     to_rename: str,
     new_name: str,
     renamer: Callable[[str, str], None],
-):
+) -> Tuple[str, str]:
     file_to_rename = path.join(root, to_rename)
     new_file_name_dest = path.join(root, new_name)
     renamer(

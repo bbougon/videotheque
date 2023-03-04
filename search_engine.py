@@ -10,6 +10,7 @@ from typing import List
 from prettytable import PrettyTable
 
 from languages import extract_languages_from_name
+from settings import config
 
 
 @dataclass
@@ -42,9 +43,15 @@ class VideoInformationRunner:
 
 
 class FFProbeRunner(VideoInformationRunner):
+    def __init__(self) -> None:
+        self.runner = config("VIDEO.RUNNER")
+
     def run(self, *args):
         completed_process: CompletedProcess = subprocess.run(
-            args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+            f"{self.runner} {args}",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=True,
         )
         return completed_process.stdout.decode("utf-8")
 
@@ -78,5 +85,5 @@ class SearchEngine:
 
     def search_for_duration(self, path: str) -> str:
         return self.runner.run(
-            f"ffprobe -i {path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
+            f"-i {path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
         )
