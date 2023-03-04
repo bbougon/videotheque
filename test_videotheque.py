@@ -3,12 +3,12 @@ from typing import List
 
 from search_engine import Movie, SearchEngine, VideoInformationRunner
 from test_dummy_renamer import DummyRenamer
-from videotheque import rename_files_and_directories, search
+from videotheque import rename, search
 
 
 def test_should_rename_one_file_according_to_their_original_names(mocker):
     walk = mocker.patch(
-        "videotheque.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -19,7 +19,7 @@ def test_should_rename_one_file_according_to_their_original_names(mocker):
     )
     renamer = DummyRenamer()
 
-    rename_files_and_directories(Path("/Videos"), renamer.rename)
+    rename(Path("/Videos"), renamer.rename)
 
     walk.assert_called()
     assert renamer.moves == [
@@ -32,7 +32,7 @@ def test_should_rename_one_file_according_to_their_original_names(mocker):
 
 def test_should_rename_files_and_directories_according_to_their_original_names(mocker):
     walk = mocker.patch(
-        "videotheque.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -48,7 +48,7 @@ def test_should_rename_files_and_directories_according_to_their_original_names(m
     )
     renamer = DummyRenamer()
 
-    result = rename_files_and_directories(Path("/Videos"), renamer.rename)
+    result = rename(Path("/Videos"), renamer.rename)
 
     walk.assert_called()
     assert renamer.moves == [
@@ -94,7 +94,7 @@ def test_should_rename_files_and_directories_according_to_their_original_names(m
 
 def test_should_rename_files_containing_year_in_parentheses(mocker):
     walk = mocker.patch(
-        "videotheque.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -108,7 +108,7 @@ def test_should_rename_files_containing_year_in_parentheses(mocker):
     )
     renamer = DummyRenamer()
 
-    rename_files_and_directories(Path("/Videos"), renamer.rename)
+    rename(Path("/Videos"), renamer.rename)
 
     walk.assert_called()
     assert renamer.moves == [
@@ -125,7 +125,7 @@ def test_should_rename_files_containing_year_in_parentheses(mocker):
 
 def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
     mocker.patch(
-        "videotheque.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -136,14 +136,14 @@ def test_should_not_rename_files_or_dir_if_already_well_formatted(mocker):
     )
     renamer = DummyRenamer()
 
-    rename_files_and_directories(Path("/Videos"), renamer.rename)
+    rename(Path("/Videos"), renamer.rename)
 
     assert renamer.moves == []
 
 
 def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
     mocker.patch(
-        "videotheque.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -154,7 +154,7 @@ def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
     )
     renamer = DummyRenamer()
 
-    rename_files_and_directories(Path("/Videos"), renamer.rename)
+    rename(Path("/Videos"), renamer.rename)
 
     assert renamer.moves == []
 
