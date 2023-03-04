@@ -4,9 +4,9 @@ import os
 from pathlib import Path
 from typing import Callable, List
 
-import rename_files_and_directories
-from search_engine import SearchEngine, SearchResult
-from test_dummy_renamer import DummyRenamer
+from rename import rename_files_and_directories
+from search.search_engine import SearchEngine, SearchResult
+from tests.test_dummy_renamer import DummyRenamer
 
 
 def rename(root_path: Path, file_renamer: Callable[[str, str], None] = os.rename):

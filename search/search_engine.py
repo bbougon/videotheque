@@ -1,8 +1,8 @@
+import os
 import shlex
 import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
-from os import walk, path
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import List
@@ -67,14 +67,14 @@ class SearchEngine:
         keywords: List[str],
     ) -> SearchResult:
         result = SearchResult()
-        for root, _, files in walk(root_path):
+        for root, _, files in os.walk(root_path):
             for name in files:
                 if not name.startswith("."):
-                    movie_name, _ = path.splitext(Path(name))
+                    movie_name, _ = os.path.splitext(Path(name))
                     result.add(
                         Movie(
                             movie_name,
-                            self.search_for_duration(path.join(root, name)),
+                            self.search_for_duration(os.path.join(root, name)),
                             [
                                 name.capitalize()
                                 for name in extract_languages_from_name(name)

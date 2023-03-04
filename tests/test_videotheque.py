@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import List
 
-from search_engine import Movie, SearchEngine, VideoInformationRunner
-from test_dummy_renamer import DummyRenamer
+from search.search_engine import SearchEngine, Movie, VideoInformationRunner
+from tests.test_dummy_renamer import DummyRenamer
 from videotheque import rename, search
 
 
@@ -161,7 +161,7 @@ def test_should_not_rename_files_or_dirs_starting_with_a_dot(mocker):
 
 def test_should_search(mocker):
     mocker.patch(
-        "search_engine.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
@@ -199,7 +199,7 @@ def test_should_search(mocker):
 
 def test_should_search_avoiding_hidden_files(mocker):
     mocker.patch(
-        "search_engine.walk",
+        "os.walk",
         return_value=[
             (
                 "/Videos",
