@@ -47,8 +47,9 @@ class FFProbeRunner(VideoInformationRunner):
         self.runner = config("VIDEO.RUNNER")
 
     def run(self, *args):
+        command = f"{self.runner} {''.join(args)}"
         completed_process: CompletedProcess = subprocess.run(
-            f"{self.runner} {args}",
+            command,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=True,
