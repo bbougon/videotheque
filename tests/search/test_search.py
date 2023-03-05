@@ -1,9 +1,11 @@
 from os.path import splitext
 from pathlib import Path
 
+from immobilus import immobilus
+
 from conftest import faker
 from search.search_engine import SearchEngine, Movie
-from tests.dummy_runner import DummyRunner
+from tests.fake import DummyRunner, MemoryLogger
 from videotheque import search
 
 
@@ -84,9 +86,40 @@ def test_should_escape_spaces_in_filename_or_dir_to_get_video_informations(mocke
 
     SearchEngine(runner).run(Path("/Videos"), [])
 
-    first_video_path = first_video_file.replace(" ", "\ ")
-    second_video_path = second_video_file.replace(" ", "\ ")
+    first_video_path = first_video_file.replace(" ", "\\ ")
+    second_video_path = second_video_file.replace(" ", "\\ ")
     assert runner.arguments == [
-        f"-i /Videos/Dir\ with\ spaces/{first_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
-        f"-i /Videos/Dir\ with\ spaces/{second_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+        f"-i /Videos/Dir\\ with\\ spaces/{first_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+        f"-i /Videos/Dir\\ with\\ spaces/{second_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
     ]
+
+
+@immobilus("2020-04-03 10:24:15.230")
+def test_should_explain_why_duration_was_not_found(mocker):
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos/Dir with spaces",
+                [],
+                ["my_video_for_which_duration_fails.avi"],
+            ),
+        ],
+    )
+    runner = DummyRunner(raise_exception=True)
+    logger = MemoryLogger()
+
+    result = SearchEngine(runner, logger).run(Path("/Videos"), [])
+
+    assert result.movies[0] == Movie(
+        "my_video_for_which_duration_fails",
+        "unable to get duration (see error log file)",
+        [],
+    )
+    assert logger.content == {
+        "datetime": "2020-04-03T10:24:15.230000",
+        "command": "ffprobe",
+        "args": "no args",
+        "return_code": -1,
+        "stderr": "An error",
+    }

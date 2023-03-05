@@ -1,5 +1,6 @@
 import random
 import re
+import immobilus  # noqa
 from typing import Optional
 
 from faker import Faker

@@ -4,3 +4,5 @@ mypy
 black
 prettytable
 Faker
+immobilus
+flake8

@@ -1,15 +1,18 @@
+from __future__ import annotations
 import mimetypes
 import os
 import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import List
+from typing import List, Optional, Dict
 
 from prettytable import PrettyTable
 
 from languages import extract_languages_from_name
+from search.exceptions import RunnerException
 from search.video_file_types import VIDEO_FILE_TYPES
 from settings import config
 
@@ -55,13 +58,25 @@ class FFProbeRunner(VideoInformationRunner):
             stderr=subprocess.PIPE,
             shell=True,
         )
+        if completed_process.returncode != 0:
+            raise RunnerException(
+                "Impossible to run the command",
+                completed_process.returncode,
+                completed_process.stderr,
+                completed_process.args,
+            )
         return completed_process.stdout.decode("utf-8")
 
 
 class SearchEngine:
-    def __init__(self, runner: VideoInformationRunner = FFProbeRunner()) -> None:
+    def __init__(
+        self,
+        runner: VideoInformationRunner = FFProbeRunner(),
+        logger: Optional[SearchLogger] = None,
+    ) -> None:
         super().__init__()
         self.runner = runner
+        self.logger = logger
 
     def run(
         self,
@@ -87,7 +102,26 @@ class SearchEngine:
         return result
 
     def search_for_duration(self, path: str) -> str:
-        final_path = path.replace(" ", "\ ")
-        return self.runner.run(
-            f"-i {final_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
-        )
+        try:
+            final_path = (
+                path.replace(" ", "\\ ")
+                .replace("&", "\\&")
+                .replace("(", "\\(")
+                .replace(")", "\\)")
+            )
+            return self.runner.run(
+                f"-i {final_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
+            )
+        except RunnerException as e:
+            self.logger.log(config("VIDEO.RUNNER"), e.details)
+            return "unable to get duration (see error log file)"
+
+
+class SearchLogger:
+    def __init__(self) -> None:
+        super().__init__()
+        self.content: Dict = {}
+
+    def log(self, command: str, error: Dict):
+        self.content = {"datetime": datetime.now().isoformat(), "command": command}
+        self.content.update(error)

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from search.search_engine import SearchEngine, Movie
-from tests.dummy_runner import DummyRunner
+from tests.fake import DummyRunner
 from tests.test_dummy_renamer import DummyRenamer
 from videotheque import rename, search
 

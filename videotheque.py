@@ -4,8 +4,9 @@ import os
 from pathlib import Path
 from typing import Callable, List
 
+from infrastructure.file_logger import FileSearchLogger
 from rename import rename_files_and_directories
-from search.search_engine import SearchEngine, SearchResult
+from search.search_engine import SearchEngine, SearchResult, FFProbeRunner
 from tests.test_dummy_renamer import DummyRenamer
 
 
@@ -37,4 +38,8 @@ if __name__ == "__main__":
     if args.command == "rename":
         print(json.dumps(rename(args.path, DummyRenamer().rename), indent=2))
     else:
-        search(Path(args.path), args.keyword.split(",")).print()
+        search(
+            Path(args.path),
+            args.keyword.split(","),
+            SearchEngine(FFProbeRunner(), FileSearchLogger()),
+        ).print()
