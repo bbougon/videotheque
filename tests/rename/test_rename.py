@@ -88,7 +88,7 @@ def test_should_rename_files_containing_year_in_parentheses(mocker):
     assert renamer.moves == [
         (
             "/Videos/Asterix E Il Regno Degli Dei (2014).ita.fre.sub.ita.eng.MIRCrew.mkv",
-            "/Videos/Asterix_E_Il_Regno_Degli_Dei_FRENCH_ENGLISH.mkv",
+            "/Videos/Asterix_E_Il_Regno_Degli_Dei_ENGLISH_FRENCH_ITALIAN.mkv",
         ),
         (
             "/Videos/Overlord (2018) [WEBRip] [720p] [YTS.AM].avi",

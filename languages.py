@@ -1,24 +1,29 @@
+from typing import List
+
 _LANGUAGES = {
-    "PORTUGUESE": "PORTUGUESE",
-    "PT": "PORTUGUESE",
     "BR": "PORTUGUESE",
-    "FRENCH": "FRENCH",
+    "EN": "ENGLISH",
+    "ENG": "ENGLISH",
     "FR": "FRENCH",
     "FRE": "FRENCH",
-    "ENG": "ENGLISH",
-    "EN": "ENGLISH",
+    "FRENCH": "FRENCH",
+    "Ita": "ITALIAN",
+    "It": "ITALIAN",
+    "PORTUGUESE": "PORTUGUESE",
+    "PT": "PORTUGUESE",
+    "Spa": "SPANISH",
     "US": "ENGLISH",
     "VOSTFR": "VOSTFR",
 }
 
 
-def extract_languages_from_name(file_name):
+def extract_languages_from_name(file_name) -> List[str]:
     flat_map = lambda f, xs: [y for ys in xs for y in f(ys)]
     flatten_file_name = flat_map(
-        lambda x: x, [el.split(" ") for el in file_name.split(".")]
+        lambda x: x, [el.casefold().split(" ") for el in file_name.split(".")]
     )
     return [
         language
         for key, language in _LANGUAGES.items()
-        if key in flatten_file_name or key.casefold() in flatten_file_name
+        if key.casefold() in flatten_file_name
     ]
