@@ -87,6 +87,7 @@ class SearchEngine:
         return result
 
     def search_for_duration(self, path: str) -> str:
+        final_path = path.replace(" ", "\ ")
         return self.runner.run(
-            f"-i {path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
+            f"-i {final_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
         )

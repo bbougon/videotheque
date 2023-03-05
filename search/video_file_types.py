@@ -90,4 +90,5 @@ VIDEO_FILE_TYPES = [
     "video/VP9",
     "video/webm",
     "video/x-msvideo",
+    "video/x-matroska",
 ]

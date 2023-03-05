@@ -65,3 +65,28 @@ def test_should_search_for_only_video_files(mocker):
             [],
         ),
     ]
+
+
+def test_should_escape_spaces_in_filename_or_dir_to_get_video_informations(mocker):
+    first_video_file: str = faker.custom_file_name()
+    second_video_file: str = faker.custom_file_name()
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos/Dir with spaces",
+                [],
+                [first_video_file, second_video_file],
+            ),
+        ],
+    )
+    runner = DummyRunner()
+
+    SearchEngine(runner).run(Path("/Videos"), [])
+
+    first_video_path = first_video_file.replace(" ", "\ ")
+    second_video_path = second_video_file.replace(" ", "\ ")
+    assert runner.arguments == [
+        f"-i /Videos/Dir\ with\ spaces/{first_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+        f"-i /Videos/Dir\ with\ spaces/{second_video_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+    ]
