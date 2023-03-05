@@ -1,5 +1,5 @@
+import mimetypes
 import os
-import shlex
 import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -10,6 +10,7 @@ from typing import List
 from prettytable import PrettyTable
 
 from languages import extract_languages_from_name
+from search.video_file_types import VIDEO_FILE_TYPES
 from settings import config
 
 
@@ -70,7 +71,8 @@ class SearchEngine:
         result = SearchResult()
         for root, _, files in os.walk(root_path):
             for name in files:
-                if not name.startswith("."):
+                type, _ = mimetypes.guess_type(name)
+                if not name.startswith(".") and type in VIDEO_FILE_TYPES:
                     movie_name, _ = os.path.splitext(Path(name))
                     result.add(
                         Movie(
