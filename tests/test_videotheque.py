@@ -64,5 +64,69 @@ def test_should_search(mocker):
     ]
     assert runner.arguments == [
         "-i /Videos/Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4 -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
-        "-i /Videos/[nextorrent.org]\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org]\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+        "-i /Videos/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+    ]
+
+
+def test_should_search_with_keywords(mocker):
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos",
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME"],
+                ["Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4"],
+            ),
+            (
+                "/Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+                [],
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi"],
+            ),
+        ],
+    )
+    runner = DummyRunner()
+
+    result = search(Path("/Videos"), ["Train"], SearchEngine(runner))
+
+    assert result.movies == [
+        Movie(
+            "[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+            "01:30:09.36",
+            ["French"],
+        ),
+    ]
+    assert runner.arguments == [
+        "-i /Videos/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
+    ]
+
+
+def test_should_search_with_keywords_ignoring_case(mocker):
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos",
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME"],
+                ["Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4"],
+            ),
+            (
+                "/Videos/[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+                [],
+                ["[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi"],
+            ),
+        ],
+    )
+    runner = DummyRunner()
+
+    result = search(Path("/Videos"), ["train"], SearchEngine(runner))
+
+    assert result.movies == [
+        Movie(
+            "[nextorrent.org] Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME",
+            "01:30:09.36",
+            ["French"],
+        ),
+    ]
+    assert runner.arguments == [
+        "-i /Videos/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME/[nextorrent.org]\\ Train.to.Busan.2016.FRENCH.BDRip.XviD-EXTREME.avi -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal",
     ]

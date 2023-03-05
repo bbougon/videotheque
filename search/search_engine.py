@@ -5,6 +5,7 @@ import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from gettext import find
 from pathlib import Path
 from subprocess import CompletedProcess
 from typing import List, Optional, Dict
@@ -87,7 +88,11 @@ class SearchEngine:
         for root, _, files in os.walk(root_path):
             for name in files:
                 type, _ = mimetypes.guess_type(name)
-                if not name.startswith(".") and type in VIDEO_FILE_TYPES:
+                if (
+                    not name.startswith(".")
+                    and type in VIDEO_FILE_TYPES
+                    and self._has_all_keywords_in_name(keywords, name)
+                ):
                     movie_name, _ = os.path.splitext(Path(name))
                     result.add(
                         Movie(
@@ -100,6 +105,24 @@ class SearchEngine:
                         )
                     )
         return result
+
+    def _has_all_keywords_in_name(self, keywords: List[str], name: str) -> bool:
+        return (
+            len(
+                list(
+                    filter(
+                        lambda has_occurence: has_occurence is True,
+                        [
+                            name.casefold().find(keyword.casefold()) >= 0
+                            for keyword in keywords
+                        ],
+                    )
+                )
+            )
+            == len(keywords)
+            if keywords
+            else True
+        )
 
     def search_for_duration(self, path: str) -> str:
         try:

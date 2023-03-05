@@ -123,3 +123,29 @@ def test_should_explain_why_duration_was_not_found(mocker):
         "return_code": -1,
         "stderr": "An error",
     }
+
+
+def test_should_search_with_various_keywords(mocker):
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos",
+                [],
+                [
+                    "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
+                    "Kung.Fu.Panda.3.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
+                ],
+            ),
+        ],
+    )
+
+    result = search(Path("/Videos"), ["kung", "fu", "3"], SearchEngine(DummyRunner()))
+
+    assert result.movies == [
+        Movie(
+            "Kung.Fu.Panda.3.2011.PORTUGUESE.720p.BDRiP.x264-nTHD",
+            "01:30:09.36",
+            ["Portuguese"],
+        ),
+    ]
