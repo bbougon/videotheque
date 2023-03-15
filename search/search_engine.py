@@ -1,19 +1,19 @@
 from __future__ import annotations
+
 import mimetypes
 import os
 import subprocess
 from abc import abstractmethod
 from dataclasses import dataclass
-from datetime import datetime
-from gettext import find
 from pathlib import Path
 from subprocess import CompletedProcess
-from typing import List, Optional, Dict
+from typing import List, Optional
 
 from prettytable import PrettyTable
 
 from languages import extract_languages_from_name
 from search.exceptions import RunnerException
+from search.logger import SearchLogger
 from search.video_file_types import VIDEO_FILE_TYPES
 from settings import config
 
@@ -34,8 +34,10 @@ class SearchResult:
         pretty_table = PrettyTable()
         pretty_table.field_names = ["Film name", "Duration", "Language"]
         for movie in self.movies:
-            pretty_table.add_row([movie.title, movie.duration, movie.languages])
-        print(pretty_table)
+            pretty_table.add_row(
+                [movie.title, movie.duration, movie.languages]
+            )
+        print(pretty_table, f"\nTotal results: {len(self.movies)}")
 
     def add(self, movie: Movie):
         self.movies.append(movie)
@@ -52,7 +54,7 @@ class FFProbeRunner(VideoInformationRunner):
         self.runner = config("VIDEO.RUNNER")
 
     def run(self, *args):
-        command = f"{self.runner} {''.join(args)}"
+        command = f"{self.runner} -i {''.join(args)} -show_entries format=duration -v error -of csv='p=0' -sexagesimal"
         completed_process: CompletedProcess = subprocess.run(
             command,
             stdout=subprocess.PIPE,
@@ -64,7 +66,7 @@ class FFProbeRunner(VideoInformationRunner):
                 "Impossible to run the command",
                 completed_process.returncode,
                 completed_process.stderr,
-                completed_process.args,
+                args=completed_process.args,
             )
         return completed_process.stdout.decode("utf-8")
 
@@ -106,7 +108,9 @@ class SearchEngine:
                     )
         return result
 
-    def _has_all_keywords_in_name(self, keywords: List[str], name: str) -> bool:
+    def _has_all_keywords_in_name(
+        self, keywords: List[str], name: str
+    ) -> bool:
         return (
             len(
                 list(
@@ -132,19 +136,8 @@ class SearchEngine:
                 .replace("(", "\\(")
                 .replace(")", "\\)")
             )
-            return self.runner.run(
-                f"-i {final_path} -show_entries format=duration -v quiet -of csv='p=0' -sexagesimal"
-            )
+            return self.runner.run(final_path)
         except RunnerException as e:
-            self.logger.log(config("VIDEO.RUNNER"), e.details)
+            if self.logger is not None:
+                self.logger.log(config("VIDEO.RUNNER"), e.details)
             return "unable to get duration (see error log file)"
-
-
-class SearchLogger:
-    def __init__(self) -> None:
-        super().__init__()
-        self.content: Dict = {}
-
-    def log(self, command: str, error: Dict):
-        self.content = {"datetime": datetime.now().isoformat(), "command": command}
-        self.content.update(error)

@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 from typing import Dict
 
-from search.search_engine import SearchLogger
+from search.logger import SearchLogger
 
 
 class FileSearchLogger(SearchLogger):
