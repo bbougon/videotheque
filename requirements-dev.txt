@@ -1,0 +1,5 @@
+pytest
+pytest-mock
+Faker
+immobilus
+pre-commit
