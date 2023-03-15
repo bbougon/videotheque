@@ -1,7 +1,7 @@
 from typing import List
 
 from search.exceptions import RunnerException
-from search.search_engine import VideoInformationRunner
+from search.runner import VideoInformationRunner, VideoDetails
 from search.logger import SearchLogger
 
 
@@ -13,13 +13,13 @@ class DummyRunner(VideoInformationRunner):
         self.arguments = []
         self.raise_exception = raise_exception
 
-    def run(self, *args):
+    def run(self, *args) -> VideoDetails:
         if self.raise_exception:
             raise RunnerException(
                 "Error occurred", -1, b"An error", args="no args"
             )
         self.arguments.append(*args)
-        return "01:30:09.36"
+        return VideoDetails(languages=[], duration="01:30:09.36")
 
 
 class MemoryLogger(SearchLogger):

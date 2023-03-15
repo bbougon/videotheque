@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import mimetypes
 import os
-import subprocess
-from abc import abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from subprocess import CompletedProcess
 from typing import List, Optional
 
 from prettytable import PrettyTable
 
+from infrastructure.ffprobe.ffprobe import FFProbeRunner
 from languages import extract_languages_from_name
 from search.exceptions import RunnerException
 from search.logger import SearchLogger
+from search.runner import VideoInformationRunner, VideoDetails
 from search.video_file_types import VIDEO_FILE_TYPES
 from settings import config
 
@@ -43,34 +42,6 @@ class SearchResult:
         self.movies.append(movie)
 
 
-class VideoInformationRunner:
-    @abstractmethod
-    def run(self, *args):
-        pass
-
-
-class FFProbeRunner(VideoInformationRunner):
-    def __init__(self) -> None:
-        self.runner = config("VIDEO.RUNNER")
-
-    def run(self, *args):
-        command = f"{self.runner} -i {''.join(args)} -show_entries format=duration -v error -of csv='p=0' -sexagesimal"
-        completed_process: CompletedProcess = subprocess.run(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=True,
-        )
-        if completed_process.returncode != 0:
-            raise RunnerException(
-                "Impossible to run the command",
-                completed_process.returncode,
-                completed_process.stderr,
-                args=completed_process.args,
-            )
-        return completed_process.stdout.decode("utf-8")
-
-
 class SearchEngine:
     def __init__(
         self,
@@ -96,10 +67,13 @@ class SearchEngine:
                     and self._has_all_keywords_in_name(keywords, name)
                 ):
                     movie_name, _ = os.path.splitext(Path(name))
+                    details = self.search_for_video_details(
+                        os.path.join(root, name)
+                    )
                     result.add(
                         Movie(
                             movie_name,
-                            self.search_for_duration(os.path.join(root, name)),
+                            details.duration,
                             [
                                 name.capitalize()
                                 for name in extract_languages_from_name(name)
@@ -128,7 +102,7 @@ class SearchEngine:
             else True
         )
 
-    def search_for_duration(self, path: str) -> str:
+    def search_for_video_details(self, path: str) -> VideoDetails:
         try:
             final_path = (
                 path.replace(" ", "\\ ")
@@ -140,4 +114,7 @@ class SearchEngine:
         except RunnerException as e:
             if self.logger is not None:
                 self.logger.log(config("VIDEO.RUNNER"), e.details)
-            return "unable to get duration (see error log file)"
+            return VideoDetails(
+                languages=[],
+                duration="unable to get duration (see error log file)",
+            )
