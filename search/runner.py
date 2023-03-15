@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 
 class VideoInformationRunner:
@@ -13,5 +13,5 @@ class VideoInformationRunner:
 
 @dataclass
 class VideoDetails:
-    languages: List[str]
     duration: str
+    languages: Optional[List[str]] = None

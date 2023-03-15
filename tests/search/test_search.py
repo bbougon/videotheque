@@ -4,6 +4,7 @@ from pathlib import Path
 from immobilus import immobilus
 
 from conftest import faker
+from search.runner import VideoDetails
 from search.search_engine import SearchEngine, Movie
 from tests.fake import DummyRunner, MemoryLogger
 from videotheque import search
@@ -151,5 +152,40 @@ def test_should_search_with_various_keywords(mocker):
             "Kung.Fu.Panda.3.2011.PORTUGUESE.720p.BDRiP.x264-nTHD",
             "01:30:09.36",
             ["Portuguese"],
+        ),
+    ]
+
+
+def test_should_retrieve_language_from_runner_only(mocker):
+    mocker.patch(
+        "os.walk",
+        return_value=[
+            (
+                "/Videos",
+                [],
+                [
+                    "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD.mp4",
+                ],
+            ),
+        ],
+    )
+
+    result = search(
+        Path("/Videos"),
+        ["kung", "fu"],
+        SearchEngine(
+            DummyRunner(
+                video_details=VideoDetails(
+                    languages=["eng", "pt"], duration="01:30:09.36"
+                )
+            )
+        ),
+    )
+
+    assert result.movies == [
+        Movie(
+            "Kung.Fu.Panda.2.2011.PORTUGUESE.720p.BDRiP.x264-nTHD",
+            "01:30:09.36",
+            ["English", "Portuguese"],
         ),
     ]

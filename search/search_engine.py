@@ -9,7 +9,7 @@ from typing import List, Optional
 from prettytable import PrettyTable
 
 from infrastructure.ffprobe.ffprobe import FFProbeRunner
-from languages import extract_languages_from_name
+from languages import extract_languages_from_name, map_languages
 from search.exceptions import RunnerException
 from search.logger import SearchLogger
 from search.runner import VideoInformationRunner, VideoDetails
@@ -70,14 +70,22 @@ class SearchEngine:
                     details = self.search_for_video_details(
                         os.path.join(root, name)
                     )
+                    languages = (
+                        [
+                            language.capitalize()
+                            for language in map_languages(details.languages)
+                        ]
+                        if details.languages
+                        else [
+                            name.capitalize()
+                            for name in extract_languages_from_name(name)
+                        ]
+                    )
                     result.add(
                         Movie(
                             movie_name,
                             details.duration,
-                            [
-                                name.capitalize()
-                                for name in extract_languages_from_name(name)
-                            ],
+                            languages,
                         )
                     )
         return result

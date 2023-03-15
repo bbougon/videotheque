@@ -51,13 +51,13 @@ def test_should_run_ffprobe_and_retrieve_result(mocker):
     )
 
 
-def test_should_run_ffprobe_and_retrieve_result_without_language(mocker):
+def test_should_run_ffprobe_and_retrieve_result_ignoring_language_case(mocker):
     mocker.patch(
         "subprocess.run",
         return_value=CompletedProcess(
             args="args",
             returncode=0,
-            stdout=b'{"programs": [],"format": {"duration": "1:41:55.136000"}}',
+            stdout=b'{"programs": [],"streams": [{"index": 1,"tags": {"LANGUAGE": "fre"}},{"index": 2,"tags": {"LANGUAGE": "eng"}}],"format": {"duration": "1:41:55.136000"}}',
         ),
     )
 
@@ -65,4 +65,42 @@ def test_should_run_ffprobe_and_retrieve_result_without_language(mocker):
         "the command returning meta from ffprobe"
     )
 
-    assert result == VideoDetails(languages=[], duration="1:41:55.136000")
+    assert result == VideoDetails(
+        languages=["fre", "eng"], duration="1:41:55.136000"
+    )
+
+
+def test_should_run_ffprobe_and_retrieve_result_without_language(mocker):
+    mocker.patch(
+        "subprocess.run",
+        return_value=CompletedProcess(
+            args="args",
+            returncode=0,
+            stdout=b'{"programs": [],"streams": [{"index": 1}], "format": {"duration": "1:41:55.136000"}}',
+        ),
+    )
+
+    result: VideoDetails = FFProbeRunner().run(
+        "the command returning meta from ffprobe"
+    )
+
+    assert result == VideoDetails(duration="1:41:55.136000")
+
+
+def test_should_run_ffprobe_and_retrieve_result_without_language_at_all(
+    mocker,
+):
+    mocker.patch(
+        "subprocess.run",
+        return_value=CompletedProcess(
+            args="args",
+            returncode=0,
+            stdout=b'{"programs": [], "format": {"duration": "1:41:55.136000"}}',
+        ),
+    )
+
+    result: VideoDetails = FFProbeRunner().run(
+        "the command returning meta from ffprobe"
+    )
+
+    assert result == VideoDetails(duration="1:41:55.136000")

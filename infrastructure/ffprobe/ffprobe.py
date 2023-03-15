@@ -17,15 +17,21 @@ class FFProbeVideoDetailsDecoder(json.JSONDecoder):
 
     def object_hook(self, dct):
         if "streams" in dct:
+            language = lambda stream: stream.get("tags").get(
+                "language"
+            ) or stream.get("tags").get("LANGUAGE")
             languages = [
-                stream["tags"]["language"] for stream in dct["streams"]
+                language(stream)
+                for stream in dct.get("streams")
+                if stream.get("tags")
             ]
             duration = dct["format"]["duration"]
-            return VideoDetails(languages, duration)
-        if "format" in dct:
             return VideoDetails(
-                languages=[], duration=dct["format"]["duration"]
+                languages=languages if len(languages) > 0 else None,
+                duration=duration,
             )
+        if "format" in dct:
+            return VideoDetails(duration=dct["format"]["duration"])
         return dct
 
 
