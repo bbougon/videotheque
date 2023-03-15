@@ -11,6 +11,7 @@ _LANGUAGES = {
     "Ita": "ITALIAN",
     "It": "ITALIAN",
     "PORTUGUESE": "PORTUGUESE",
+    "POR": "PORTUGUESE",
     "PT": "PORTUGUESE",
     "Spa": "SPANISH",
     "US": "ENGLISH",
